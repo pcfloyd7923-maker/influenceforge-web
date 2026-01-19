@@ -50,7 +50,7 @@ export default function Home() {
             View pricing
           </a>
           <a
-            href="#pricing"
+           href="/get-started"
             style={{
               padding: "10px 14px",
               borderRadius: 10,
