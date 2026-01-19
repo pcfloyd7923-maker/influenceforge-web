@@ -1,86 +1,139 @@
-import Link from "next/link";
+"use client";
 
-export default function GetStartedPage() {
-  const steps = [
-    {
-      title: "1) Tell me what you’re building",
-      desc: "Business type, what you want the site to do (sell, book, capture leads, etc.), and what “done” looks like.",
-    },
-    {
-      title: "2) Pick your vibe + colors",
-      desc: "Send 1–3 example sites you like (or just say: modern, bold, luxury, clean, etc.).",
-    },
-    {
-      title: "3) Add your content",
-      desc: "Logo (if you have it), tagline, offers, pricing, and any photos. If you don’t have them, we’ll generate placeholders.",
-    },
-    {
-      title: "4) Connect your domain",
-      desc: "We’ll point influenceforge.io to Vercel (root + www) and you’re live.",
-    },
-  ];
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type Plan = {
+  id: "starter" | "pro" | "elite";
+  name: string;
+  price: string;
+  bullets: string[];
+  popular?: boolean;
+};
+
+export default function GetStartedPricingPage() {
+  const router = useRouter();
+
+  const plans: Plan[] = useMemo(
+    () => [
+      {
+        id: "starter",
+        name: "Starter",
+        price: "$29/mo",
+        bullets: ["Landing page", "Basic lead capture", "Email support"],
+      },
+      {
+        id: "pro",
+        name: "Pro",
+        price: "$79/mo",
+        popular: true,
+        bullets: ["Multi-page site", "Lead capture + automation ready", "Priority support"],
+      },
+      {
+        id: "elite",
+        name: "Elite",
+        price: "$199/mo",
+        bullets: ["Full funnel buildout", "Checkout + upsells", "1:1 setup help"],
+      },
+    ],
+    []
+  );
+
+  const [email, setEmail] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState<Plan["id"]>("pro");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+
+    if (!email.trim() || !email.includes("@")) {
+      setErr("Enter a valid email.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Save lead
+      const res = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, plan: selectedPlan, source: "pricing" }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save email");
+
+      // Go to checkout page (internal)
+      router.push(`/checkout?plan=${selectedPlan}&email=${encodeURIComponent(email)}`);
+    } catch (e) {
+      setErr("Something went wrong. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <main style={styles.page}>
       <section style={styles.container}>
-        <div style={styles.header}>
+        <header style={styles.header}>
           <p style={styles.kicker}>InfluenceForge</p>
-          <h1 style={styles.h1}>Get started</h1>
+          <h1 style={styles.h1}>Pricing</h1>
           <p style={styles.sub}>
-            You’re deployed on Vercel. Next, we’ll get your homepage looking right,
-            then wire up the domain and checkout when you’re ready.
+            Pick a plan, drop your email, and you’ll be taken to checkout.
           </p>
-
-          <div style={styles.actions}>
-            <Link href="/" style={styles.primaryBtn}>
-              Go to Home
-            </Link>
-
-            <a
-              href="mailto:peyton.floyd87@gmail.com?subject=InfluenceForge%20-%20Get%20Started&body=What%20I%20want%20to%20build%3A%0A%0AExamples%20I%20like%3A%0A%0ADomain%20status%3A%20(influenceforge.io%20/%20www)%0A%0AAnything%20else%3A"
-              style={styles.secondaryBtn}
-            >
-              Email me your plan
-            </a>
-          </div>
-        </div>
+        </header>
 
         <div style={styles.grid}>
-          {steps.map((s) => (
-            <div key={s.title} style={styles.card}>
-              <h3 style={styles.cardTitle}>{s.title}</h3>
-              <p style={styles.cardDesc}>{s.desc}</p>
-            </div>
+          {plans.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setSelectedPlan(p.id)}
+              style={{
+                ...styles.card,
+                ...(selectedPlan === p.id ? styles.cardActive : {}),
+              }}
+            >
+              {p.popular && <div style={styles.badge}>Most Popular</div>}
+              <h3 style={styles.cardTitle}>{p.name}</h3>
+              <div style={styles.price}>{p.price}</div>
+              <ul style={styles.list}>
+                {p.bullets.map((b) => (
+                  <li key={b} style={styles.listItem}>
+                    {b}
+                  </li>
+                ))}
+              </ul>
+              <div style={styles.selectHint}>
+                {selectedPlan === p.id ? "Selected" : "Select"}
+              </div>
+            </button>
           ))}
         </div>
 
-        <div style={styles.footer}>
-          <div style={styles.note}>
-            <strong>Tip:</strong> If Vercel shows a build error again, it’s almost
-            always a small JSX or “server vs client component” issue — screenshot
-            the error and I’ll fix it fast.
-          </div>
+        <form onSubmit={onSubmit} style={styles.form}>
+          <label style={styles.label}>
+            Email to send your receipt + onboarding
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              style={styles.input}
+              autoComplete="email"
+            />
+          </label>
 
-          <div style={styles.footerActions}>
-            <a
-              href="https://vercel.com/dashboard"
-              target="_blank"
-              rel="noreferrer"
-              style={styles.ghostBtn}
-            >
-              Open Vercel Dashboard
-            </a>
+          {err && <div style={styles.error}>{err}</div>}
 
-            <a
-              href="https://github.com/pcfloyd7923-maker/influenceforge-web"
-              target="_blank"
-              rel="noreferrer"
-              style={styles.ghostBtn}
-            >
-              Open GitHub Repo
-            </a>
-          </div>
-        </div>
+          <button type="submit" style={styles.primaryBtn} disabled={loading}>
+            {loading ? "Continuing..." : "Continue to Checkout"}
+          </button>
+
+          <p style={styles.small}>
+            By continuing, you agree to be contacted about your purchase & onboarding.
+          </p>
+        </form>
       </section>
     </main>
   );
@@ -98,109 +151,71 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily:
       'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"',
   },
-  container: {
-    maxWidth: 980,
-    margin: "0 auto",
-  },
-  header: {
-    maxWidth: 740,
-    marginBottom: 28,
-  },
-  kicker: {
-    margin: 0,
-    fontSize: 13,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    opacity: 0.7,
-  },
-  h1: {
-    margin: "10px 0 8px",
-    fontSize: 44,
-    lineHeight: 1.05,
-    letterSpacing: -0.5,
-  },
-  sub: {
-    margin: 0,
-    fontSize: 16,
-    lineHeight: 1.6,
-    opacity: 0.85,
-  },
-  actions: {
-    display: "flex",
-    gap: 12,
-    flexWrap: "wrap",
-    marginTop: 18,
-  },
-  primaryBtn: {
-    display: "inline-block",
-    padding: "12px 14px",
-    borderRadius: 12,
-    textDecoration: "none",
-    color: "#0b0f19",
-    background: "white",
-    fontWeight: 800,
-  },
-  secondaryBtn: {
-    display: "inline-block",
-    padding: "12px 14px",
-    borderRadius: 12,
-    textDecoration: "none",
-    color: "white",
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.18)",
-    fontWeight: 800,
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-    gap: 14,
-    marginTop: 18,
-  },
+  container: { maxWidth: 980, margin: "0 auto" },
+  header: { maxWidth: 720, marginBottom: 20 },
+  kicker: { margin: 0, fontSize: 13, letterSpacing: 2, textTransform: "uppercase", opacity: 0.7 },
+  h1: { margin: "10px 0 8px", fontSize: 44, lineHeight: 1.05, letterSpacing: -0.5 },
+  sub: { margin: 0, fontSize: 16, lineHeight: 1.6, opacity: 0.85 },
+
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 },
+
   card: {
+    textAlign: "left",
     padding: 16,
     borderRadius: 16,
     background: "rgba(255,255,255,0.06)",
     border: "1px solid rgba(255,255,255,0.14)",
+    cursor: "pointer",
   },
-  cardTitle: {
-    margin: 0,
-    fontSize: 16,
+  cardActive: { border: "1px solid rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.10)" },
+  badge: {
+    display: "inline-block",
+    padding: "4px 8px",
+    borderRadius: 999,
+    fontSize: 12,
     fontWeight: 800,
+    background: "rgba(255,255,255,0.16)",
+    border: "1px solid rgba(255,255,255,0.20)",
+    marginBottom: 10,
   },
-  cardDesc: {
-    margin: "8px 0 0",
-    fontSize: 14,
-    lineHeight: 1.55,
-    opacity: 0.85,
-  },
-  footer: {
+  cardTitle: { margin: 0, fontSize: 18, fontWeight: 900 },
+  price: { marginTop: 8, fontSize: 26, fontWeight: 900 },
+  list: { margin: "10px 0 0", paddingLeft: 18, opacity: 0.9 },
+  listItem: { marginBottom: 6, fontSize: 14, lineHeight: 1.45 },
+  selectHint: { marginTop: 12, fontSize: 13, fontWeight: 800, opacity: 0.85 },
+
+  form: {
     marginTop: 18,
-  },
-  note: {
-    padding: 14,
-    borderRadius: 14,
+    padding: 16,
+    borderRadius: 16,
     background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.12)",
-    fontSize: 14,
-    lineHeight: 1.55,
-    opacity: 0.9,
   },
-  footerActions: {
-    display: "flex",
-    gap: 10,
-    flexWrap: "wrap",
-    marginTop: 12,
-  },
-  ghostBtn: {
-    display: "inline-block",
-    padding: "10px 12px",
+  label: { display: "block", fontSize: 13, fontWeight: 800, opacity: 0.9 },
+  input: {
+    marginTop: 8,
+    width: "100%",
+    padding: "12px 12px",
     borderRadius: 12,
-    textDecoration: "none",
-    color: "white",
-    background: "transparent",
     border: "1px solid rgba(255,255,255,0.18)",
-    fontWeight: 700,
-    fontSize: 13,
+    background: "rgba(0,0,0,0.25)",
+    color: "white",
+    outline: "none",
+    fontSize: 14,
   },
+  primaryBtn: {
+    marginTop: 12,
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: 12,
+    border: "none",
+    background: "white",
+    color: "#0b0f19",
+    fontWeight: 900,
+    cursor: "pointer",
+  },
+  error: { marginTop: 10, color: "#ffb4b4", fontWeight: 800, fontSize: 13 },
+  small: { margin: "10px 0 0", fontSize: 12, opacity: 0.75 },
 };
+
 
