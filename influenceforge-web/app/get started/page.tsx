@@ -50,10 +50,26 @@ export default function GetStartedPage() {
                   width: "100%",
                   cursor: "pointer",
                 }}
-                onClick={() => alert("Next step: Stripe checkout. We'll add this next.")}
-              >
-                Continue
-              </button>
+                <a
+  href="mailto:peyton.floyd87@gmail.com?subject=InfluenceForge%20-%20Checkout%20Next%20Step&body=I%20want%20to%20set%20up%20checkout%20for%20InfluenceForge."
+  style={{
+    display: "inline-block",
+    marginTop: 14,
+    padding: "12px 14px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "transparent",
+    color: "inherit",
+    fontWeight: 800,
+    width: "100%",
+    textAlign: "center",
+    textDecoration: "none",
+    cursor: "pointer",
+  }}
+>
+  Continue
+</a>
+
             </div>
           ))}
         </div>
